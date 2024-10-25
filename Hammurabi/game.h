@@ -2,6 +2,8 @@
 #define GAME_H
 #include <string>
 
+using namespace std;
+
 struct GameState {
   int year;
   int population;
@@ -17,8 +19,11 @@ struct GameState {
 void InitializeGameState(GameState& state);
 void SaveGame(const GameState& state);
 bool LoadGame(GameState& state);
+void ExitGame(GameState& state);
 void PrintReport(const GameState& state);
 void NextRound(GameState& state);
 bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& bushels_for_food, int& acres_to_plant);
+bool CheckInput(GameState& state, string& input, string& ask);
+void PrintIncorrectWayMessage(GameState& state);
 
 #endif // GAME_H

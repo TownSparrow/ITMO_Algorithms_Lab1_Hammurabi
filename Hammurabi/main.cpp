@@ -9,13 +9,25 @@ using namespace std;
 
 // Начало игры
 void StartGame(GameState& state) {
+  wcout << L"Клон игры Hammurabi. Разработчик: Леонид Воробьев (TownSparrow)" << endl;
+
   if (LoadGame(state)) {
-    wcout << L"Найдено сохранение! Продолжить игру? (y/n): ";
     char choice;
-    cin >> choice;
-    if (choice == 'n') {
-      InitializeGameState(state); // Используем новую функцию для инициализации
-    }
+    wcout << L"Найдено сохранение! Продолжить игру (e - закрыть игру)? (y/n/e): ";
+    while (true) {
+      cin >> choice;
+      if (choice == 'y') {
+        break;
+      } else if (choice == 'n') {
+        InitializeGameState(state);
+        break;
+      } else if (choice == 'e') {
+        exit(0);
+        break;
+      } else {
+        wcout << L"Неверный ввод. Пожалуйста, введите 'y' для подтверждения, 'n' для отказа или 'e' для выхода из игры: "; 
+      }
+    } 
   } else {
     InitializeGameState(state); // Инициализация, если нет сохранения
   }
@@ -27,11 +39,13 @@ void PlayGame(GameState& state) {
   while (state.year <= 10) {
     PrintReport(state);
     int acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant;
-    if (!ProcessInput(state, acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant)) {
-      continue;
-    }
+    bool isResourcesEnough = false;
+    // Пока игрок не подберет правильное распределение ресурсов на этом этапе, будем запрашивать распределение заново
+    do {
+      isResourcesEnough = ProcessInput(state, acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant);
+    } while (!isResourcesEnough);
     NextRound(state);
-    SaveGame(state);
+    // SaveGame(state);
   }
 }
 
@@ -43,7 +57,6 @@ int main() {
     
   GameState state; // Объявляем состояние игры
   StartGame(state); // Запускаем игру
-
   PlayGame(state); // Игровой процесс
 
   cout << "Игра окончена!" << endl;

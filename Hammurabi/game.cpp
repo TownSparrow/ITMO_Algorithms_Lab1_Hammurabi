@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <thread>
+#include <chrono>
 #include "game.h"
 
 using namespace std;
@@ -48,6 +50,29 @@ bool LoadGame(GameState& state) {
     return true;
   }
   return false;
+}
+
+// Выход из игры
+void ExitGame(GameState& state) {
+  cout << "Хотите сохранить игру перед выходом? (y/n): ";
+  char choice;
+  while (true) {
+    cin >> choice;
+    if (choice == 'y') {
+      SaveGame(state);
+      cout << "Сохранение выполнено." << endl;
+      break;
+    }
+    else if (choice == 'n') {
+      break;
+    }
+    else {
+      cout << "Неверный ввод. Пожалуйста, введите 'y' для подтверждения или 'n' для отказа: "; 
+    }
+  }
+  cout << "Игра завершена." << endl;
+  this_thread::sleep_for(chrono::seconds(2));
+  exit(0);
 }
 
 // Отчет за шаг игры
@@ -153,36 +178,51 @@ void NextRound(GameState& state) {
 // Проверка входных данных
 bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& bushels_for_food, int& acres_to_plant) {
   int land_price = rand() % (max_land_price - min_land_price + 1) + min_land_price;
-
-  cout << "Сколько акров земли повелеваешь купить? ";
-  cin >> acres_to_buy;
+  string input;
+  string ask;
+  
+  ask = "Сколько акров земли повелеваешь купить? ";
+  cout << ask;
+  cin >> input;
+  if (!CheckInput(state, input, ask)) return false;
+  acres_to_buy = stoi(input);
+  //cin >> acres_to_buy;
   if (acres_to_buy * land_price > state.bushels) {
-    cout << "Недостаточно пшеницы для покупки земли." << endl;
+    PrintIncorrectWayMessage(state);
     return false;
   }
 
-  cout << "Сколько бушелей пшеницы повелеваешь продать? ";
-  cin >> acres_to_sell;
+  ask = "Сколько бушелей пшеницы повелеваешь продать? ";
+  cout << ask;
+  cin >> input;
+  if (!CheckInput(state, input, ask)) return false;
+  acres_to_sell = stoi(input);
   if (acres_to_sell > state.acres) {
-    cout << "Недостаточно земли для продажи." << endl;
+    PrintIncorrectWayMessage(state);
     return false;
   }
 
-  cout << "Сколько бушелей пшеницы повелеваешь съесть? ";
-  cin >> bushels_for_food;
+  ask = "Сколько бушелей пшеницы повелеваешь съесть? ";
+  cout << ask;
+  cin >> input;
+  if (!CheckInput(state, input, ask)) return false;
+  bushels_for_food = stoi(input);
   if (bushels_for_food > state.bushels) {
-    cout << "Недостаточно пшеницы для еды." << endl;
+    PrintIncorrectWayMessage(state);
     return false;
   }
 
-  cout << "Сколько акров земли повелеваешь засеять? ";
-  cin >> acres_to_plant;
+  ask = "Сколько акров земли повелеваешь засеять? ";
+  cout << ask;
+  cin >> input;
+  if (!CheckInput(state, input, ask)) return false;
+  acres_to_plant = stoi(input);
   if (acres_to_plant > state.acres) {
-    cout << "Недостаточно земли для посева." << endl;
+    PrintIncorrectWayMessage(state);
     return false;
   }
   if (acres_to_plant * bushels_per_acre_seed > state.bushels) {
-    cout << "Недостаточно пшеницы для посева." << endl;
+    PrintIncorrectWayMessage(state);
     return false;
   }
 
@@ -209,4 +249,39 @@ bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& 
   state.population += state.new_people; // Обновление общего числа населения
 
   return true;
+}
+
+// Проверка ввода на команду "exit" или число ли это вообще
+bool CheckInput(GameState& state, string& input, string& ask) {
+  while (true) {
+    if (input == "exit") {
+      ExitGame(state);
+      return false;
+    }
+    bool isDigit = true;
+    for (char c : input) {
+      if (!std::isdigit(c)) {
+        isDigit = false;
+        break;
+      }
+    }
+    if (isDigit) {
+      try {
+        int value = stoi(input);
+        return true;
+      } catch (const out_of_range&) {
+        PrintIncorrectWayMessage(state);
+        cout << ask;
+        cin >> input;
+      }
+    } else {
+      cout << "Неверный ввод. Пожалуйста, введите либо число, либо команду 'exit' для завершения игры: ";
+      cin >> input;
+    }
+  } 
+}
+
+// Сообщение о том, что экономика распределена неправильно
+void PrintIncorrectWayMessage(GameState& state) {
+  cout << "О, повелитель, пощади нас! У нас только " + to_string(state.population) + " человек, " + to_string(state.bushels) + " бушелей пшеницы и " + to_string(state.acres) + " акров земли!" << endl;
 }
