@@ -152,21 +152,22 @@ void NextRound(GameState& state) {
   if (state.bushels < food_needed) {
     int starving_people = state.population - (state.bushels / bushels_per_person);
     if (starving_people > 0) {
-      state.died_of_starvation = starving_people;
+      state.died_of_starvation_current_year = starving_people;
+      state.died_of_starvation += state.died_of_starvation_current_year;
       state.population -= starving_people;
 
     // Проверка условия проигрыша
-    if (static_cast<double>(state.died_of_starvation) / (state.population + state.died_of_starvation) > 0.45) {
+    if (static_cast<double>(state.died_of_starvation_current_year) / (state.population + state.died_of_starvation_current_year) > 0.45) {
       cout << "Вы проиграли. Более 45% населения умерло от голода." << endl;
       exit(0); // Завершение игры
       }
     }
   } else {
-    state.died_of_starvation = 0; // Никто не умер, если еды хватает
+    state.died_of_starvation_current_year = 0; // Никто не умер, если еды хватает
   }
 
   // Генерация новых жителей
-  state.new_people = (state.died_of_starvation / 2) + (5 - state.bushels_per_acre) * state.bushels / 600 + 1;
+  state.new_people = (state.died_of_starvation_current_year / 2) + (5 - state.bushels_per_acre) * state.bushels / 600 + 1;
   if (state.new_people < 0) {
     state.new_people = 0;
   }
@@ -232,13 +233,14 @@ bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& 
   if (bushels_for_food < food_needed) {
     int starving_people = state.population - (bushels_for_food / bushels_per_person);
     if (starving_people > 0) {
-      state.died_of_starvation = starving_people;
+      state.died_of_starvation_current_year = starving_people;
+      state.died_of_starvation += state.died_of_starvation_current_year;
       state.population -= starving_people;
     } else {
-      state.died_of_starvation = 0; // Никто не умер
+      state.died_of_starvation_current_year = 0; // Никто не умер
     }
     } else {
-    state.died_of_starvation = 0; // Никто не умер, если еды хватает
+    state.died_of_starvation_current_year = 0; // Никто не умер, если еды хватает
     }
 
   // Обновление состояния игры
