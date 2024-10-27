@@ -14,6 +14,7 @@ struct GameState {
   int new_people;
   bool plague;
   int died_of_starvation;
+  int died_of_starvation_current_year;
 };
 
 void InitializeGameState(GameState& state);
@@ -25,5 +26,6 @@ void NextRound(GameState& state);
 bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& bushels_for_food, int& acres_to_plant);
 bool CheckInput(GameState& state, string& input, string& ask);
 void PrintIncorrectWayMessage(GameState& state);
+void PrintFinalResults(GameState& state);
 
 #endif // GAME_H

@@ -47,6 +47,7 @@ void PlayGame(GameState& state) {
     NextRound(state);
     // SaveGame(state);
   }
+  PrintFinalResults(state);
 }
 
 // main =)

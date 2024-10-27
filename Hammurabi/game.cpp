@@ -28,7 +28,8 @@ void InitializeGameState(GameState& state) {
   state.rats_ate = 0; // будет обновлено в следующем раунде
   state.new_people = 0; // будет обновлено в следующем раунде
   state.plague = false; // начальное состояние без чумы
-  state.died_of_starvation = 0; // начальное количество человек, умерших от голода
+  state.died_of_starvation = 0; // начальное количество человек, умерших от голода за все время
+  state.died_of_starvation_current_year = 0; // начальное количество человек, умерших от голода за текущий год
 }
 
 // Сохранение игры
@@ -85,13 +86,13 @@ void PrintReport(const GameState& state) {
          << " твоего высочайшего правления." << endl;
 
   // Умершие от голода
-  if (state.year > 1 && state.died_of_starvation > 0) {
-    cout << state.died_of_starvation << " человек умерли с голоду, ";
+  if (state.year > 1 && state.died_of_starvation_current_year > 0) {
+    cout << state.died_of_starvation_current_year << " человек умерли с голоду, и";
   }
 
   // Новые жители
   if (state.new_people > 0) {
-    cout << "и " << state.new_people << " человек прибыли в наш великий город; ";
+    cout << state.new_people << " человек прибыли в наш великий город; ";
   }
 
   // Информация о чуме
@@ -284,4 +285,31 @@ bool CheckInput(GameState& state, string& input, string& ask) {
 // Сообщение о том, что экономика распределена неправильно
 void PrintIncorrectWayMessage(GameState& state) {
   cout << "О, повелитель, пощади нас! У нас только " + to_string(state.population) + " человек, " + to_string(state.bushels) + " бушелей пшеницы и " + to_string(state.acres) + " акров земли!" << endl;
+}
+
+// Вывод финальных результатов
+void PrintFinalResults(GameState& state)
+{
+  cout << "_____________________________________________" << endl;
+  cout << "РЕЗУЛЬТАТЫ ИГРЫ:" << endl;
+
+  // Вычисление статистики
+  double average_death_rate = static_cast<double>(state.died_of_starvation) / state.population * 100.0 / state.year;
+  int land_per_person = state.acres / state.population;
+
+  // Вывод в соответствие с условиями
+  if (average_death_rate > 33.0 && land_per_person < 7) {
+    cout << "Оценка: плохо" << endl;
+    cout << "Из-за вашей некомпетентности в управлении, народ устроил бунт, и изгнал вас из города. Теперь вы вынуждены влачить жалкое существование в изгнании." << endl;
+  } else if (average_death_rate > 10.0 && land_per_person < 9) {
+    cout << "Оценка: удовлетворительно" << endl;
+    cout << "Вы правили железной рукой, подобно Нерону и Ивану Грозному. Народ вздохнул с облегчением, и никто больше не желает видеть вас правителем." << endl;
+  } else if (average_death_rate > 3.0 && land_per_person < 10) {
+    cout << "Оценка: хорошо" << endl;
+    cout << "Вы справились вполне неплохо, у вас, конечно, есть недоброжелатели, но многие хотели бы увидеть вас во главе города снова." << endl;
+  } else {
+    cout << "Оценка: отлично" << endl;
+    cout << "Фантастика! Карл Великий, Дизраэли и Джефферсон вместе не справились бы лучше." << endl;
+  }
+
 }
