@@ -18,6 +18,9 @@ const int max_bushels_per_acre = 6;
 const int min_land_price = 17;
 const int max_land_price = 26;
 
+// Динамически изменяемые значения
+int acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant;
+
 // Инициализация состояния игры
 void InitializeGameState(GameState& state) {
   state.year = 1;
@@ -33,7 +36,7 @@ void InitializeGameState(GameState& state) {
 }
 
 // Сохранение игры
-void SaveGame(const GameState& state) {
+void SaveGame(GameState& state) {
   ofstream save_file("savegame.txt");
   save_file << state.year << " " << state.population << " " << state.bushels << " "
             << state.acres << " " << state.bushels_per_acre << " " << state.rats_ate << " "
@@ -46,7 +49,7 @@ bool LoadGame(GameState& state) {
   ifstream save_file("savegame.txt");
   if (save_file.is_open()) {
     save_file >> state.year >> state.population >> state.bushels >> state.acres
-              >> state.bushels_per_acre >> state.rats_ate >> state.new_people >> state.plague;
+              >> state.bushels_per_acre >> state.rats_ate >> state.new_people >> state.plague >> state.died_of_starvation >> state.died_of_starvation_current_year;
     save_file.close();
     return true;
   }
@@ -77,17 +80,22 @@ void ExitGame(GameState& state) {
 }
 
 // Отчет за шаг игры
-void PrintReport(const GameState& state) {
+// Отчет за шаг игры
+void PrintReport(GameState& state) {
   // Разделение этапов отчёта
   cout << "_____________________________________________" << endl;
 
   // Приветствие
   cout << "Мой повелитель, соизволь поведать тебе в году " << state.year 
-         << " твоего высочайшего правления." << endl;
+       << " твоего высочайшего правления." << endl;
 
   // Умершие от голода
-  if (state.year > 1 && state.died_of_starvation_current_year > 0) {
-    cout << state.died_of_starvation_current_year << " человек умерли с голоду, и";
+  if (state.year > 1) {
+    if (state.died_of_starvation_current_year > 0) {
+      cout << state.died_of_starvation_current_year << " человек умерли с голоду, и ";
+    } else {
+      cout << "В этом году не было смертей от голода; ";
+    }
   }
 
   // Новые жители
@@ -96,18 +104,20 @@ void PrintReport(const GameState& state) {
   }
 
   // Информация о чуме
-  cout << (state.plague ? "Чума уничтожила половину населения; " : "");
+  if (state.plague) {
+    cout << "Чума уничтожила половину населения; ";
+  }
 
   // Текущее население
   cout << "Население города сейчас составляет " << state.population << " человек;" << endl;
 
   // Сбор пшеницы и пшеница с акра
   cout << "Мы собрали " << state.bushels << " бушелей пшеницы, по " 
-         << state.bushels_per_acre << " бушеля с акра;" << endl;
+       << state.bushels_per_acre << " бушеля с акра;" << endl;
 
   // Пшеница, уничтоженная крысами
   cout << "Крысы истребили " << state.rats_ate << " бушелей пшеницы, оставив " 
-         << state.bushels << " бушелей в амбарах;" << endl;
+       << state.bushels << " бушелей в амбарах;" << endl;
 
   // Акры земли
   cout << "Город сейчас занимает " << state.acres << " акров;" << endl;
@@ -119,82 +129,76 @@ void PrintReport(const GameState& state) {
 }
 
 
+
+// Реализация логики следующего раунда
 // Реализация логики следующего раунда
 void NextRound(GameState& state) {
   // Изменение года
   state.year++;
 
-  // Пшеницы с акры земли
+  // Генерация количества пшеницы с акров земли
   state.bushels_per_acre = rand() % (max_bushels_per_acre - min_bushels_per_acre + 1) + min_bushels_per_acre;
 
   // Определяем, сколько акров будет обработано
   int acres_to_cultivate = min(state.acres, state.population * acres_per_person);
 
   // Сколько съели крысы
-  state.rats_ate = rand() % (int)(0.07 * state.bushels); // Крысы съедают 0 до 7% от имеющегося количества бушелей
+  state.rats_ate = rand() % static_cast<int>(0.07 * state.bushels);
 
-  // Вероятность чумы и её влияние на число жителей
+  // Проверка на чуму
   state.plague = (rand() % 100) < plague_probability;
   if (state.plague) {
     state.population /= 2; // Уменьшение населения вдвое при возникновении чумы
   }
 
-  // Проверка, что жителей не отрицательное количество
-  if (state.population < 0) {
-    state.population = 0;
-  }
-
-  // Обновление суммарного количества пшеницы
+  // Обновление количества пшеницы
   state.bushels = state.bushels - state.rats_ate + (state.bushels_per_acre * acres_to_cultivate);
 
-  // Проверка потребления пшеницы
+  // Проверка потребления пшеницы и подсчет умерших от голода
   int food_needed = state.population * bushels_per_person;
-  if (state.bushels < food_needed) {
-    int starving_people = state.population - (state.bushels / bushels_per_person);
-    if (starving_people > 0) {
-      state.died_of_starvation_current_year = starving_people;
-      state.died_of_starvation += state.died_of_starvation_current_year;
-      state.population -= starving_people;
+  int starving_people = max(state.population - (bushels_for_food / bushels_per_person), 0);
+
+  // Обновление состояний
+  if (starving_people > 0) {
+    state.died_of_starvation_current_year = starving_people;
+    state.died_of_starvation += starving_people;
+    state.population -= starving_people;
 
     // Проверка условия проигрыша
-    if (static_cast<double>(state.died_of_starvation_current_year) / (state.population + state.died_of_starvation_current_year) > 0.45) {
+    if (static_cast<double>(starving_people) / (state.population + starving_people) > 0.45) {
       cout << "Вы проиграли. Более 45% населения умерло от голода." << endl;
-      exit(0); // Завершение игры
-      }
+      exit(0);
     }
   } else {
     state.died_of_starvation_current_year = 0; // Никто не умер, если еды хватает
   }
 
   // Генерация новых жителей
-  state.new_people = (state.died_of_starvation_current_year / 2) + (5 - state.bushels_per_acre) * state.bushels / 600 + 1;
-  if (state.new_people < 0) {
-    state.new_people = 0;
-  }
-  if (state.new_people > 50) {
-    state.new_people = 50;
-  }
+  state.new_people = max(0, min(50, (state.died_of_starvation_current_year / 2) + (5 - state.bushels_per_acre) * state.bushels / 600 + 1));
   state.population += state.new_people; // Обновление общего числа населения
 }
 
 // Проверка входных данных
-bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& bushels_for_food, int& acres_to_plant) {
+// Проверка входных данных
+// Проверка входных данных
+bool ProcessInput(GameState& state) {
   int land_price = rand() % (max_land_price - min_land_price + 1) + min_land_price;
   string input;
   string ask;
-  
+
+  // Запрос на покупку акров
   ask = "Сколько акров земли повелеваешь купить? ";
   cout << ask;
   cin >> input;
   if (!CheckInput(state, input, ask)) return false;
   acres_to_buy = stoi(input);
-  //cin >> acres_to_buy;
   if (acres_to_buy * land_price > state.bushels) {
     PrintIncorrectWayMessage(state);
     return false;
   }
 
-  ask = "Сколько бушелей пшеницы повелеваешь продать? ";
+  // Запрос на продажу акров
+  ask = "Сколько акров земли повелеваешь продать? ";
   cout << ask;
   cin >> input;
   if (!CheckInput(state, input, ask)) return false;
@@ -204,6 +208,7 @@ bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& 
     return false;
   }
 
+  // Запрос на потребление пшеницы
   ask = "Сколько бушелей пшеницы повелеваешь съесть? ";
   cout << ask;
   cin >> input;
@@ -214,6 +219,7 @@ bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& 
     return false;
   }
 
+  // Запрос на засеивание акров
   ask = "Сколько акров земли повелеваешь засеять? ";
   cout << ask;
   cin >> input;
@@ -228,28 +234,9 @@ bool ProcessInput(GameState& state, int& acres_to_buy, int& acres_to_sell, int& 
     return false;
   }
 
-  // Рассчет еды на человека
-  int food_needed = state.population * bushels_per_person;
-  if (bushels_for_food < food_needed) {
-    int starving_people = state.population - (bushels_for_food / bushels_per_person);
-    if (starving_people > 0) {
-      state.died_of_starvation_current_year = starving_people;
-      state.died_of_starvation += state.died_of_starvation_current_year;
-      state.population -= starving_people;
-    } else {
-      state.died_of_starvation_current_year = 0; // Никто не умер
-    }
-    } else {
-    state.died_of_starvation_current_year = 0; // Никто не умер, если еды хватает
-    }
-
   // Обновление состояния игры
   state.acres += acres_to_buy - acres_to_sell;
   state.bushels -= (acres_to_buy * land_price) + bushels_for_food + (acres_to_plant * bushels_per_acre_seed);
-    
-  // Генерация новых жителей и обновление населения
-  state.new_people = rand() % 50; // Генерация новых жителей
-  state.population += state.new_people; // Обновление общего числа населения
 
   return true;
 }
@@ -290,8 +277,7 @@ void PrintIncorrectWayMessage(GameState& state) {
 }
 
 // Вывод финальных результатов
-void PrintFinalResults(GameState& state)
-{
+void PrintFinalResults(GameState& state) {
   cout << "_____________________________________________" << endl;
   cout << "РЕЗУЛЬТАТЫ ИГРЫ:" << endl;
 

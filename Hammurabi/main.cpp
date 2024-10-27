@@ -38,16 +38,30 @@ void PlayGame(GameState& state) {
   // Основной игровой цикл
   while (state.year <= 10) {
     PrintReport(state);
-    int acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant;
+
+    // Проверка на наличие населения
+    if (state.population <= 0) {
+      cout << "Все жители погибли. Игра окончена." << endl;
+      break;
+    }
+
+    
     bool isResourcesEnough = false;
-    // Пока игрок не подберет правильное распределение ресурсов на этом этапе, будем запрашивать распределение заново
+
     do {
-      isResourcesEnough = ProcessInput(state, acres_to_buy, acres_to_sell, bushels_for_food, acres_to_plant);
+      isResourcesEnough = ProcessInput(state);
     } while (!isResourcesEnough);
+    
     NextRound(state);
-    // SaveGame(state);
+
+    // Проверка состояния после раунда
+    if (state.population <= 0) {
+      cout << "Все жители погибли. Игра окончена." << endl;
+      break;
+    }
   }
   PrintFinalResults(state);
+  ExitGame(state);
 }
 
 // main =)
