@@ -44,7 +44,6 @@ void PlayGame(GameState& state) {
       cout << "Все жители погибли. Игра окончена." << endl;
       break;
     }
-
     
     bool isResourcesEnough = false;
 

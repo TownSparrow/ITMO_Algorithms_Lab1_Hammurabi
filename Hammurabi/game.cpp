@@ -80,7 +80,6 @@ void ExitGame(GameState& state) {
 }
 
 // Отчет за шаг игры
-// Отчет за шаг игры
 void PrintReport(GameState& state) {
   // Разделение этапов отчёта
   cout << "_____________________________________________" << endl;
@@ -112,8 +111,13 @@ void PrintReport(GameState& state) {
   cout << "Население города сейчас составляет " << state.population << " человек;" << endl;
 
   // Сбор пшеницы и пшеница с акра
-  cout << "Мы собрали " << state.bushels << " бушелей пшеницы, по " 
-       << state.bushels_per_acre << " бушеля с акра;" << endl;
+  if (acres_to_plant > 0) {
+    cout << "Мы собрали " << state.bushels_per_acre * acres_to_plant << " бушелей пшеницы, по "
+      << state.bushels_per_acre << " бушеля с акра;" << endl;
+  } else {
+    cout << "Мы ничего не собрали с акров, потому что посева не было... " << endl;
+  }
+  
 
   // Пшеница, уничтоженная крысами
   cout << "Крысы истребили " << state.rats_ate << " бушелей пшеницы, оставив " 
@@ -130,7 +134,6 @@ void PrintReport(GameState& state) {
 
 
 
-// Реализация логики следующего раунда
 // Реализация логики следующего раунда
 void NextRound(GameState& state) {
   // Изменение года
@@ -151,8 +154,14 @@ void NextRound(GameState& state) {
     state.population /= 2; // Уменьшение населения вдвое при возникновении чумы
   }
 
-  // Обновление количества пшеницы
-  state.bushels = state.bushels - state.rats_ate + (state.bushels_per_acre * acres_to_cultivate);
+  // Обновление количества пшеницы c учетом того, был ли посев
+  //state.bushels = state.bushels - state.rats_ate + (state.bushels_per_acre * acres_to_cultivate);
+  if (acres_to_plant > 0) {
+    state.bushels = state.bushels - state.rats_ate + (state.bushels_per_acre * acres_to_plant);
+  }
+  else {
+    state.bushels = state.bushels - state.rats_ate;
+  }
 
   // Проверка потребления пшеницы и подсчет умерших от голода
   int food_needed = state.population * bushels_per_person;
@@ -178,8 +187,6 @@ void NextRound(GameState& state) {
   state.population += state.new_people; // Обновление общего числа населения
 }
 
-// Проверка входных данных
-// Проверка входных данных
 // Проверка входных данных
 bool ProcessInput(GameState& state) {
   int land_price = rand() % (max_land_price - min_land_price + 1) + min_land_price;

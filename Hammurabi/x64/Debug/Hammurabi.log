@@ -1,0 +1,3 @@
+﻿  game.cpp
+D:\Study\ITMO\1\Анализ и разработка алгоритмов\Hammurabi\Hammurabi\game.cpp(246,67): warning C4244: '-=': conversion from 'double' to 'int', possible loss of data
+  Hammurabi.vcxproj -> D:\Study\ITMO\1\Анализ и разработка алгоритмов\Hammurabi\x64\Debug\Hammurabi.exe
